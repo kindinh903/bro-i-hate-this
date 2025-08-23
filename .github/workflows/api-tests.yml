@@ -1,113 +1,139 @@
-name: API Tests
+name: Run Postman API Tests 📦
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
-  schedule:
-    # Chạy hàng ngày lúc 8:00 UTC (3:00 PM VN time)
-    - cron: '0 8 * * *'
-  workflow_dispatch: # Cho phép chạy manual
+
+concurrency: 
+  group: api-tests-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  api-tests:
-    runs-on: ubuntu-latest
+  postman-tests: 
+    runs-on: ubuntu-22.04
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout ⚙️
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
 
-    - name: Install Newman
-      run: |
-        npm install -g newman
-        npm install -g newman-reporter-htmlextra
+      - name: Install Newman (Postman CLI)
+        run: npm install -g newman
 
-    - name: Wait for API to be ready
-      run: |
-        echo "Waiting for API to be available..."
-        for i in {1..30}; do
-          if curl -s -o /dev/null -w "%{http_code}" https://api-with-bugs.practicesoftwaretesting.com/health | grep -q "200\|404"; then
-            echo "API is responding"
-            break
+      - name: Run Messages API tests 📧
+        run: |
+          newman run Messages_Clean.postman_collection.json \
+            --iteration-data messages_clean_cases.csv \
+            --env-var baseUrl=https://api-with-bugs.practicesoftwaretesting.com \
+            --reporters cli,json \
+            --reporter-json-export messages-results.json || echo "Messages API tests failed" >> failed_tests.txt
+
+      - name: Run Payment Check tests 💳
+        run: |
+          newman run payment_check_collection.json \
+            --iteration-data payment_check_cases.csv \
+            --env-var baseUrl=https://api-with-bugs.practicesoftwaretesting.com \
+            --reporters cli,json \
+            --reporter-json-export payment-results.json || echo "Payment Check tests failed" >> failed_tests.txt
+
+      - name: Run Reply Message tests 💬
+        run: |
+          newman run reply_message.json \
+            --iteration-data reply_message.csv \
+            --env-var baseUrl=https://api-with-bugs.practicesoftwaretesting.com \
+            --reporters cli,json \
+            --reporter-json-export reply-results.json || echo "Reply Message tests failed" >> failed_tests.txt
+
+      - name: Check overall result ✅/❌
+        run: |
+          if [ -f failed_tests.txt ]; then
+            echo "❌ Some Postman test suites failed:"
+            cat failed_tests.txt
+            echo ""
+            echo "📊 Test Results Summary:"
+            
+            # Show summary for each test suite if results exist
+            if [ -f messages-results.json ]; then
+              echo "Messages API Tests:"
+              node -e "
+                const results = JSON.parse(require('fs').readFileSync('messages-results.json', 'utf8'));
+                const stats = results.run.stats;
+                console.log(\`  ✓ Passed: \${stats.assertions.passed}\`);
+                console.log(\`  ✗ Failed: \${stats.assertions.failed}\`);
+              "
+            fi
+            
+            if [ -f payment-results.json ]; then
+              echo "Payment Check Tests:"
+              node -e "
+                const results = JSON.parse(require('fs').readFileSync('payment-results.json', 'utf8'));
+                const stats = results.run.stats;
+                console.log(\`  ✓ Passed: \${stats.assertions.passed}\`);
+                console.log(\`  ✗ Failed: \${stats.assertions.failed}\`);
+              "
+            fi
+            
+            if [ -f reply-results.json ]; then
+              echo "Reply Message Tests:"
+              node -e "
+                const results = JSON.parse(require('fs').readFileSync('reply-results.json', 'utf8'));
+                const stats = results.run.stats;
+                console.log(\`  ✓ Passed: \${stats.assertions.passed}\`);
+                console.log(\`  ✗ Failed: \${stats.assertions.failed}\`);
+              "
+            fi
+            
+            exit 1
+          else
+            echo "✅ All Postman test suites passed!"
+            
+            echo ""
+            echo "📊 Test Results Summary:"
+            
+            # Show summary for successful tests
+            if [ -f messages-results.json ]; then
+              echo "Messages API Tests:"
+              node -e "
+                const results = JSON.parse(require('fs').readFileSync('messages-results.json', 'utf8'));
+                const stats = results.run.stats;
+                console.log(\`  ✓ Total Assertions: \${stats.assertions.total}\`);
+                console.log(\`  ✓ All Passed: \${stats.assertions.passed}\`);
+              "
+            fi
+            
+            if [ -f payment-results.json ]; then
+              echo "Payment Check Tests:"
+              node -e "
+                const results = JSON.parse(require('fs').readFileSync('payment-results.json', 'utf8'));
+                const stats = results.run.stats;
+                console.log(\`  ✓ Total Assertions: \${stats.assertions.total}\`);
+                console.log(\`  ✓ All Passed: \${stats.assertions.passed}\`);
+              "
+            fi
+            
+            if [ -f reply-results.json ]; then
+              echo "Reply Message Tests:"
+              node -e "
+                const results = JSON.parse(require('fs').readFileSync('reply-results.json', 'utf8'));
+                const stats = results.run.stats;
+                console.log(\`  ✓ Total Assertions: \${stats.assertions.total}\`);
+                console.log(\`  ✓ All Passed: \${stats.assertions.passed}\`);
+              "
+            fi
           fi
-          echo "Attempt $i: API not ready, waiting 10 seconds..."
-          sleep 10
-        done
 
-    - name: Run Payment Check Tests
-      run: |
-        newman run postman/collections/payment-check-collection.json \
-          -d postman/data/payment_check_cases.csv \
-          -r cli,htmlextra \
-          --reporter-htmlextra-export reports/payment-check-report.html \
-          --reporter-htmlextra-title "Payment Check API Tests" \
-          --color on \
-          --disable-unicode
-      continue-on-error: true
-
-    - name: Run Messages Reply Tests  
-      run: |
-        newman run postman/collections/messages-reply-collection.json \
-          -d postman/data/reply_testcases.csv \
-          -r cli,htmlextra \
-          --reporter-htmlextra-export reports/messages-reply-report.html \
-          --reporter-htmlextra-title "Messages Reply API Tests" \
-          --color on \
-          --disable-unicode
-      continue-on-error: true
-
-    - name: Create reports directory
-      run: mkdir -p reports
-      
-    - name: Upload test reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-reports
-        path: reports/
-        retention-days: 30
-
-    - name: Upload test results summary
-      uses: actions/upload-artifact@v4
-      if: always() 
-      with:
-        name: newman-results
-        path: newman/
-        retention-days: 7
-
-    - name: Comment PR with test results
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const fs = require('fs');
-          
-          // Tạo comment summary cho PR
-          let comment = '## 🧪 API Test Results\n\n';
-          comment += '| Test Suite | Status |\n';
-          comment += '|------------|--------|\n';
-          comment += '| Payment Check Tests | ✅ Completed |\n';  
-          comment += '| Messages Reply Tests | ✅ Completed |\n\n';
-          comment += '📊 Detailed reports are available in the Actions artifacts.\n';
-          comment += '🔗 [View full test results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})';
-
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: comment
-          });
-
-    - name: Notify on Slack (Optional)
-      if: failure()
-      run: |
-        echo "Tests failed! You can add Slack notification here if needed."
-        # curl -X POST -H 'Content-type: application/json' \
-        #   --data '{"text":"API Tests failed in repository ${{ github.repository }}"}' \
-        #   ${{ secrets.SLACK_WEBHOOK_URL }}
+      - name: Upload test results 📤
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: newman-results
+          path: |
+            *-results.json
+            failed_tests.txt
+          retention-days: 30
