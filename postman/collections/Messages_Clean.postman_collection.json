@@ -1,0 +1,230 @@
+{
+  "info": {
+    "name": "Messages API Tests (Clean)",
+    "_postman_id": "c0a80123-4567-89ab-cdef-0123456789ab",
+    "description": "Automated tests for POST /messages based on 30 provided cases. Uses CSV for data-driven tests and includes separate requests for 404/405.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "POST /messages (Data-Driven)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "",
+              "// Build request body dynamically from CSV flags",
+              "const d = pm.iterationData;",
+              "",
+              "// Helper: get boolean-ish value",
+              "function asBool(v, def=true) {",
+              "    if (v === undefined || v === null || v === \"\") return def;",
+              "    const s = String(v).toLowerCase().trim();",
+              "    if ([\"false\",\"0\",\"no\",\"n\"].includes(s)) return false;",
+              "    if ([\"true\",\"1\",\"yes\",\"y\"].includes(s)) return true;",
+              "    return def;",
+              "}",
+              "",
+              "// Generate strings if requested",
+              "function genStr(ch, len) {",
+              "    len = parseInt(len || 0);",
+              "    if (!len || len <= 0) return null;",
+              "    return ch.repeat(len);",
+              "}",
+              "",
+              "const includeName = asBool(d.get(\"include_name\"), true);",
+              "const includeEmail = asBool(d.get(\"include_email\"), true);",
+              "const includeSubject = asBool(d.get(\"include_subject\"), true);",
+              "const includeMessage = asBool(d.get(\"include_message\"), true);",
+              "",
+              "let body = {};",
+              "",
+              "// name",
+              "let nameVal = d.get(\"name\");",
+              "const genNameLen = d.get(\"gen_name_len\");",
+              "const genName = genStr(\"A\", genNameLen);",
+              "if (genName) nameVal = genName;",
+              "if (includeName) body.name = nameVal;",
+              "",
+              "// email",
+              "let emailVal = d.get(\"email\");",
+              "if (includeEmail) body.email = emailVal;",
+              "",
+              "// subject",
+              "let subjectVal = d.get(\"subject\");",
+              "if (includeSubject) body.subject = subjectVal;",
+              "",
+              "// message",
+              "let messageVal = d.get(\"message\");",
+              "const genMsgLen = d.get(\"gen_message_len\");",
+              "const genMsg = genStr(\"M\", genMsgLen);",
+              "if (genMsg) messageVal = genMsg;",
+              "if (includeMessage) body.message = messageVal;",
+              "",
+              "// extra unexpected field",
+              "if (asBool(d.get(\"add_extra\"), false)) {",
+              "    body.extra = \"field\";",
+              "}",
+              "",
+              "// If raw_invalid_json flag is set, purposely set an invalid JSON body",
+              "if (asBool(d.get(\"raw_invalid_json\"), false)) {",
+              "    pm.request.body.raw = 'name: \"John\", email: \"john@doe.example\", subject: \"website\", message: \"Help\"';",
+              "} else {",
+              "    pm.request.body.raw = JSON.stringify(body, null, 2);",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "",
+              "const expected = String(pm.iterationData.get(\"expectedStatus\") || \"\").trim();",
+              "pm.test(`Status code matches expected (${expected})`, function () {",
+              "    if (expected.includes(\"|\")) {",
+              "        const allowed = expected.split(\"|\").map(s => parseInt(s.trim(), 10));",
+              "        pm.expect(allowed).to.include(pm.response.code);",
+              "    } else {",
+              "        pm.response.to.have.status(parseInt(expected, 10));",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"{{name}}\",\n  \"email\": \"{{email}}\",\n  \"subject\": \"{{subject}}\",\n  \"message\": \"{{message}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/messages",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "messages"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "GET /messages (expect 405)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "",
+              "pm.test(\"Status code is 405\", function(){ pm.response.to.have.status(405); });",
+              "const j = pm.response.json();",
+              "pm.test(\"Body has message field\", function(){ pm.expect(j).to.have.property(\"message\"); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/messages",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "messages"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "PUT /messages (expect 405)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "",
+              "pm.test(\"Status code is 405\", function(){ pm.response.to.have.status(405); });",
+              "const j = pm.response.json();",
+              "pm.test(\"Body has message field\", function(){ pm.expect(j).to.have.property(\"message\"); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "url": {
+          "raw": "{{baseUrl}}/messages",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "messages"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "POST /messagez (expect 404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "",
+              "pm.test(\"Status code is 404\", function(){ pm.response.to.have.status(404); });",
+              "const j = pm.response.json();",
+              "pm.test(\"Message indicates resource not found\", function(){ pm.expect(j).to.have.property(\"message\"); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"John\",\n  \"email\": \"john@doe.example\",\n  \"subject\": \"website\",\n  \"message\": \"Help\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/messagez",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "messagez"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api-with-bugs.practicesoftwaretesting.com"
+    }
+  ]
+}

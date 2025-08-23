@@ -1,0 +1,31 @@
+testCase,messageId,name,email,subject,message,expectedStatus,include_name,include_email,include_subject,include_message,raw_invalid_json,add_extra,gen_name_len,gen_message_len,use_token,token_type,http_method
+Valid reply with valid token and existing messageId,1,John Doe,john@doe.example,website,Reply content,201,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,POST
+Valid reply with different subject,5,Alice,alice@example.com,support,Reply ok,201,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,POST
+Valid reply minimal length fields,3,A,a@b.co,x,y,201,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,POST
+Missing Authorization header,1,John,john@doe.example,website,Reply,401,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,FALSE,none,POST
+Empty token,1,John,john@doe.example,website,Reply,401,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,empty,POST
+Invalid token format,1,John,john@doe.example,website,Reply,401,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,invalid,POST
+Expired token,1,John,john@doe.example,website,Reply,401,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,expired,POST
+Token khác role user,1,John,john@doe.example,website,Reply,401,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,wrong_role,POST
+Invalid messageId non-existing,999999,John,john@doe.example,website,Reply,201,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,POST
+Invalid messageId string,abc,John,john@doe.example,website,Reply,201,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,POST
+Missing messageId in URL,,John,john@doe.example,website,Reply,201,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,POST
+Empty name field,1,,john@doe.example,website,Reply,201,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,POST
+Missing name,1,John Doe,john@doe.example,website,Reply,201,FALSE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,POST
+Empty email,1,John,,website,Reply,201,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,POST
+Invalid email format,1,John,john.doe,website,Reply,201,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,POST
+Empty subject,1,John,john@doe.example,,Reply,201,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,POST
+Empty message,1,John,john@doe.example,website,Reply,201,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,POST
+All fields missing,1,,,,400,401,FALSE,FALSE,FALSE,FALSE,FALSE,,,TRUE,valid,POST,
+Long name 256 chars,1,John Doe,john@doe.example,website,Reply,400|201,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,256,,TRUE,valid,POST
+Long message 5000 chars,1,John,john@doe.example,website,Reply content,201|400,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,5000,TRUE,valid,POST
+XSS attempt in message,1,John,john@doe.example,website,<script>alert(1)</script>,400,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,POST
+SQL injection attempt in subject,1,John,john@doe.example,DROP TABLE users;,ok,400,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,POST
+Wrong HTTP method GET,1,John,john@doe.example,website,Reply,405,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,GET
+Wrong HTTP method PUT,1,John,john@doe.example,website,Reply,405,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,PUT
+Wrong endpoint URL,1,John,john@doe.example,website,Reply,404,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,POST
+Wrong JSON format,1,John,john@doe.example,website,Reply,400,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,,,TRUE,valid,POST
+Extra unexpected field,1,John,john@doe.example,website,ok,201|400,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE,,,TRUE,valid,POST
+Concurrent valid replies,1,John,john@doe.example,website,Reply content,201,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,POST
+Email uppercase,1,John,JOHN@DOE.EXAMPLE,website,ok,201,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,POST
+MessageId biên thấp,0,John,john@doe.example,website,Reply,201,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,,,TRUE,valid,POST

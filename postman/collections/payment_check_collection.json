@@ -1,0 +1,150 @@
+{
+  "info": {
+    "name": "Payment Check API Tests (Data-Driven)",
+    "_postman_id": "d1b81234-5678-90ab-cdef-0123456789ab",
+    "description": "Automated tests for POST /payment/check endpoint using CSV for data-driven testing.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "POST /payment/check (Data-Driven)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "",
+              "// Build request body dynamically from CSV flags",
+              "const d = pm.iterationData;",
+              "",
+              "// Helper: get boolean-ish value",
+              "function asBool(v, def=true) {",
+              "    if (v === undefined || v === null || v === \"\") return def;",
+              "    const s = String(v).toLowerCase().trim();",
+              "    if ([\"false\",\"0\",\"no\",\"n\"].includes(s)) return false;",
+              "    if ([\"true\",\"1\",\"yes\",\"y\"].includes(s)) return true;",
+              "    return def;",
+              "}",
+              "",
+              "// Generate strings if requested",
+              "function genStr(ch, len) {",
+              "    len = parseInt(len || 0);",
+              "    if (!len || len <= 0) return null;",
+              "    return ch.repeat(len);",
+              "}",
+              "",
+              "const includeMethod = asBool(d.get(\"include_method\"), true);",
+              "const includeAccountName = asBool(d.get(\"include_account_name\"), true);",
+              "const includeAccountNumber = asBool(d.get(\"include_account_number\"), true);",
+              "",
+              "let body = {};",
+              "",
+              "// method",
+              "let methodVal = d.get(\"method\");",
+              "if (includeMethod && methodVal !== undefined) body.method = methodVal;",
+              "",
+              "// account_name",
+              "let accountNameVal = d.get(\"account_name\");",
+              "const genAccountNameLen = d.get(\"gen_account_name_len\");",
+              "const genAccountName = genStr(\"A\", genAccountNameLen);",
+              "if (genAccountName) accountNameVal = genAccountName;",
+              "if (includeAccountName && accountNameVal !== undefined) body.account_name = accountNameVal;",
+              "",
+              "// account_number",
+              "let accountNumberVal = d.get(\"account_number\");",
+              "if (includeAccountNumber && accountNumberVal !== undefined) body.account_number = accountNumberVal;",
+              "",
+              "// extra unexpected field",
+              "if (asBool(d.get(\"add_extra\"), false)) {",
+              "    body.extra = \"field\";",
+              "}",
+              "",
+              "// If raw_invalid_json flag is set, purposely set an invalid JSON body",
+              "if (asBool(d.get(\"raw_invalid_json\"), false)) {",
+              "    pm.request.body.raw = 'method: \"Credit Card\", account_name: \"John Doe\", account_number: \"9876543XX\"';",
+              "} else {",
+              "    pm.request.body.raw = JSON.stringify(body, null, 2);",
+              "}",
+              "",
+              "// Log the test case being executed",
+              "console.log(`Executing: ${d.get(\"testCase\")}`);",
+              "console.log(`Request body: ${pm.request.body.raw}`);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "",
+              "const expected = String(pm.iterationData.get(\"expectedStatus\") || \"\").trim();",
+              "const testCase = pm.iterationData.get(\"testCase\");",
+              "",
+              "pm.test(`${testCase} - Status code matches expected (${expected})`, function () {",
+              "    if (expected.includes(\"|\")) {",
+              "        const allowed = expected.split(\"|\").map(s => parseInt(s.trim(), 10));",
+              "        pm.expect(allowed).to.include(pm.response.code);",
+              "    } else {",
+              "        pm.response.to.have.status(parseInt(expected, 10));",
+              "    }",
+              "});",
+              "",
+              "// Additional validations for successful responses",
+              "if (pm.response.code === 200) {",
+              "    pm.test(`${testCase} - Response has valid structure`, function () {",
+              "        const responseJson = pm.response.json();",
+              "        pm.expect(responseJson).to.be.an('object');",
+              "    });",
+              "}",
+              "",
+              "// Additional validations for error responses",
+              "if (pm.response.code >= 400) {",
+              "    pm.test(`${testCase} - Error response has message`, function () {",
+              "        try {",
+              "            const responseJson = pm.response.json();",
+              "            pm.expect(responseJson).to.have.property('message');",
+              "        } catch (e) {",
+              "            // If response is not JSON, that's also acceptable for some error cases",
+              "            pm.expect(pm.response.text()).to.not.be.empty;",
+              "        }",
+              "    });",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"method\": \"{{method}}\",\n  \"account_name\": \"{{account_name}}\",\n  \"account_number\": \"{{account_number}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/payment/check",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "payment",
+            "check"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api-with-bugs.practicesoftwaretesting.com"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+case,expectedStatus,name,email,subject,message,include_name,include_email,include_subject,include_message,gen_name_len,gen_message_len,raw_invalid_json,add_extra
+Valid all fields,200,John Doe,john@doe.example,website,Something is wrong with the website.,TRUE,TRUE,TRUE,TRUE,,,FALSE,FALSE
+Valid with different subject,200,Alice,alice@example.com,support,Need help.,TRUE,TRUE,TRUE,TRUE,,,FALSE,FALSE
+Valid minimal length,200,A,a@b.co,hi,ok,TRUE,TRUE,TRUE,TRUE,,,FALSE,FALSE
+Empty name,422|400,,john@doe.example,website,Help,TRUE,TRUE,TRUE,TRUE,,,FALSE,FALSE
+Missing name,422|400,,john@doe.example,website,Help,FALSE,TRUE,TRUE,TRUE,,,FALSE,FALSE
+Empty email,422|400,John,,website,Help,TRUE,TRUE,TRUE,TRUE,,,FALSE,FALSE
+Missing email,422|400,John,,website,Help,TRUE,FALSE,TRUE,TRUE,,,FALSE,FALSE
+Invalid email no @,422|400,John,john.doe.example,website,Help,TRUE,TRUE,TRUE,TRUE,,,FALSE,FALSE
+Invalid email no domain,422|400,John,john@,website,Help,TRUE,TRUE,TRUE,TRUE,,,FALSE,FALSE
+Empty subject,422|400,John,john@doe.example,,Help,TRUE,TRUE,TRUE,TRUE,,,FALSE,FALSE
+Missing subject,422|400,John,john@doe.example,,Help,TRUE,TRUE,FALSE,TRUE,,,FALSE,FALSE
+Empty message,422|400,John,john@doe.example,website,,TRUE,TRUE,TRUE,TRUE,,,FALSE,FALSE
+Missing message,422|400,John,john@doe.example,website,,TRUE,TRUE,TRUE,FALSE,,,FALSE,FALSE
+Long name 256,422|400,,john@doe.example,website,test,TRUE,TRUE,TRUE,TRUE,256,,FALSE,FALSE
+Long message 5000,422|400,John,john@doe.example,website,,TRUE,TRUE,TRUE,TRUE,,5000,FALSE,FALSE
+Special chars in name,200|400,@John#,john@doe.example,website,Help,TRUE,TRUE,TRUE,TRUE,,,FALSE,FALSE
+SQL injection in message,422|400,John,john@doe.example,website,DROP TABLE users;,TRUE,TRUE,TRUE,TRUE,,,FALSE,FALSE
+XSS in message,422|400,John,john@doe.example,website,<script>alert(1)</script>,TRUE,TRUE,TRUE,TRUE,,,FALSE,FALSE
+Invalid email TLD,422|400,John,john@doe.123,website,Help,TRUE,TRUE,TRUE,TRUE,,,FALSE,FALSE
+Email with spaces,422|400,John,john @doe.com,website,Help,TRUE,TRUE,TRUE,TRUE,,,FALSE,FALSE
+Name with spaces,200|400, John ,john@doe.example,website,Help,TRUE,TRUE,TRUE,TRUE,,,FALSE,FALSE
+Subject numeric,422,John,john@doe.example,12345,Help,TRUE,TRUE,TRUE,TRUE,,,FALSE,FALSE
+Message only spaces,422|400,John,john@doe.example,website, ,TRUE,TRUE,TRUE,TRUE,,,FALSE,FALSE
+Extra unexpected field,200|400,John,john@doe.example,website,Help,TRUE,TRUE,TRUE,TRUE,,,FALSE,TRUE
+Wrong JSON format,422|400,,,,,TRUE,TRUE,TRUE,TRUE,,,TRUE,FALSE
+Concurrent valid payload,200,John Doe,john@doe.example,website,Concurrent test,TRUE,TRUE,TRUE,TRUE,,,FALSE,FALSE
+Valid email uppercase,200,John,JOHN@DOE.EXAMPLE,website,Help,TRUE,TRUE,TRUE,TRUE,,,FALSE,FALSE
