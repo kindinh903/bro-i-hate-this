@@ -28,24 +28,24 @@ jobs:
 
       - name: Run Messages API tests 📧
         run: |
-          newman run Messages_Clean.postman_collection.json \
-            --iteration-data messages_clean_cases.csv \
+          newman run postman/collections/Messages_Clean.postman_collection.json \
+            --iteration-data postman/data/messages_clean_cases.csv \
             --env-var baseUrl=https://api-with-bugs.practicesoftwaretesting.com \
             --reporters cli,json \
             --reporter-json-export messages-results.json || echo "Messages API tests failed" >> failed_tests.txt
 
       - name: Run Payment Check tests 💳
         run: |
-          newman run payment_check_collection.json \
-            --iteration-data payment_check_cases.csv \
+          newman run postman/collections/payment_check_collection.json \
+            --iteration-data postman/data/payment_check_cases.csv \
             --env-var baseUrl=https://api-with-bugs.practicesoftwaretesting.com \
             --reporters cli,json \
             --reporter-json-export payment-results.json || echo "Payment Check tests failed" >> failed_tests.txt
 
       - name: Run Reply Message tests 💬
         run: |
-          newman run reply_message.json \
-            --iteration-data reply_message.csv \
+          newman run postman/collections/reply_message.json \
+            --iteration-data postman/data/reply_message.csv \
             --env-var baseUrl=https://api-with-bugs.practicesoftwaretesting.com \
             --reporters cli,json \
             --reporter-json-export reply-results.json || echo "Reply Message tests failed" >> failed_tests.txt
